@@ -2,16 +2,21 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import * as api from './api';
 import { createEmptyCharacter, Character } from './character.vm';
-import { mapCharacterFromApiToVm } from './character.mappers';
+import {
+  mapCharacterFromApiToVm,
+  mapCharacterFromVmToApi,
+} from './character.mappers';
 import { CharacterComponent } from './character.component';
+
 import { switchRoutes } from 'core/router';
 import { BackLink } from 'common/components/navigation';
 
-export const CharacterContainer: React.FunctionComponent = (props) => {
+export const CharacterContainer: React.FunctionComponent = () => {
   const [character, setCharacter] = React.useState<Character>(
     createEmptyCharacter()
   );
   const { id } = useParams<{ id: string }>();
+  const characterExists = character.name;
 
   const handleLoadCharacter = async () => {
     try {
@@ -29,13 +34,32 @@ export const CharacterContainer: React.FunctionComponent = (props) => {
     }
   }, []);
 
+  const handleSave = async (character: Character) => {
+    const apiCharacter = mapCharacterFromVmToApi(character);
+    const success = await api.saveCharacter(apiCharacter);
+    if (success) {
+      handleLoadCharacter();
+    } else {
+      alert('Error while saving character');
+    }
+  };
+
   return (
     <>
       <BackLink
         text="Back to character list"
         link={switchRoutes.characterCollection}
       />
-      <CharacterComponent character={character} />
+      {characterExists ? (
+        <CharacterComponent
+          character={character}
+          onCharacterFormSave={handleSave}
+        />
+      ) : (
+        <div>
+          We couldn't find the character 😟. Please try with another one
+        </div>
+      )}
     </>
   );
 };
